@@ -17,6 +17,8 @@ class GreyscaleRes(Enum):
 
 def detect_obstacles():
     scan_result = fc.scan_step(min_dist)
+    if not scan_result:
+        return False
     curr_scan = scan_result[3:7]
     if curr_scan != all(elem == DIST_ABOVE_REF for elem in curr_scan):
         fc.time.sleep(sleep_duration)
