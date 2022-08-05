@@ -4,7 +4,7 @@ from enum import Enum
 car_speed = 20
 greyscale_ref = 200
 DIST_ABOVE_REF = 2
-min_dist = 20  # [cm]
+min_dist = 30  # [cm]
 sleep_duration = 0.1  # [s]
 
 
@@ -27,7 +27,6 @@ def detect_obstacles():
         fc.turn_left(car_speed)
         return True
     else:
-        fc.forward(car_speed)
         return False
 
 
