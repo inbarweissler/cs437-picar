@@ -1,18 +1,18 @@
-import picar_4wd as fc
-from enum import Enum
+import sys
+sys.path.append('/home/pi/cs437-picar')
 
-car_speed = 20
-greyscale_ref = 200
+# import time
+from typing import Dict, Callable
+from picar_4wd.types import MotorPower, GrayscaleResult, GrayscaleReading
+import picar_4wd as fc
+import sys
+import signal
+
+car_speed: MotorPower = 2
+greyscale_ref: GrayscaleReading = 150
 DIST_ABOVE_REF = 2
 min_dist = 10  # [cm]
 sleep_duration = 0.1  # [s]
-
-
-
-class GreyscaleRes(Enum):
-    LEFT: int = -1
-    FORWARD: int = 0
-    RIGHT: int = 1
 
 
 def detect_obstacles():
@@ -20,7 +20,7 @@ def detect_obstacles():
     if not scan_result:
         return False
     curr_scan = scan_result[3:7]
-    if curr_scan != all(elem == DIST_ABOVE_REF for elem in curr_scan):
+    if curr_scan != [DIST_ABOVE_REF, DIST_ABOVE_REF, DIST_ABOVE_REF, DIST_ABOVE_REF]:
         fc.time.sleep(sleep_duration)
         fc.backward(car_speed)
         fc.time.sleep(sleep_duration)
@@ -30,7 +30,14 @@ def detect_obstacles():
         return False
 
 
-def track_line(is_detour: bool) -> bool:
+action_dict: Dict[GrayscaleResult, Callable[[MotorPower], None]] = {
+    GrayscaleResult.LEFT: fc.turn_left,
+    GrayscaleResult.FORWARD: fc.forward,
+    GrayscaleResult.RIGHT: fc.turn_right,
+}
+
+
+def track_line(is_detour: bool) -> None:
     adc_value_list = fc.get_grayscale_list()
     line_status = fc.get_line_status(greyscale_ref, adc_value_list)
 
@@ -40,23 +47,31 @@ def track_line(is_detour: bool) -> bool:
     if move to the left then need again to verify it crossed the obstacle
     and then need to move to the right back to path
     '''
-    if is_detour:
-        fc.turn_right(car_speed)
-        is_detour = False
+    # if is_detour:
+    #     fc.turn_right(car_speed)
+    #     # return False
+    # else:
+    if line_status is not GrayscaleResult.UNKNOWN:
+        action_dict[line_status](car_speed)
+        # time.sleep(0.05)
+        # fc.stop()
     else:
-        if line_status == GreyscaleRes.FORWARD:
-            fc.forward(car_speed)
-        elif line_status == GreyscaleRes.LEFT:
-            fc.turn_left(car_speed)
-        elif line_status == GreyscaleRes.RIGHT:
-            fc.turn_right(car_speed)
-        else:
-            fc.stop()
-    if detect_obstacles():
-        is_detour = True
+        fc.stop()
+    # if detect_obstacles():
+    #     return True
+    # return last_state
 
 
-if __name__=='__main__':
+def signal_handler(signal, frame):
+    fc.stop()
+    print("\nprogram exiting gracefully")
+    sys.exit(0)
+
+
+signal.signal(signal.SIGINT, signal_handler)
+
+if __name__ == '__main__':
+
     '''
     This is main script for cs437 lab1 part1
     Driving along a routh which determined by path marked on the floor
@@ -64,8 +79,6 @@ if __name__=='__main__':
     While driving avoiding obstacles, 
     and if encountered one go left and then turn right and return to path
     '''
-    is_detour = False
+
     while True:
-        is_detour = track_line(is_detour)
-
-
+        track_line(False)

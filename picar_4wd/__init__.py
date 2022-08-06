@@ -1,34 +1,40 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from typing import Tuple
+
+from numpy import argmin, mean
+
 from picar_4wd.pwm import PWM
 from picar_4wd.adc import ADC
 from picar_4wd.pin import Pin
 from picar_4wd.motor import Motor
 from picar_4wd.servo import Servo
-from picar_4wd.ultrasonic import Ultrasonic 
+from picar_4wd.types import GrayscaleReading, GrayscaleResult
+from picar_4wd.ultrasonic import Ultrasonic
 from picar_4wd.speed import Speed
-from picar_4wd.filedb import FileDB  
+from picar_4wd.filedb import FileDB
 from picar_4wd.utils import *
 import time
 
+
 # Config File:
 config = FileDB("config")
-left_front_reverse = config.get('left_front_reverse', default_value = False)
-right_front_reverse = config.get('right_front_reverse', default_value = False)
-left_rear_reverse = config.get('left_rear_reverse', default_value = False)
-right_rear_reverse = config.get('right_rear_reverse', default_value = False)    
-ultrasonic_servo_offset = int(config.get('ultrasonic_servo_offset', default_value = 0)) 
+left_front_reverse = config.get('left_front_reverse', default_value=False)
+right_front_reverse = config.get('right_front_reverse', default_value=False)
+left_rear_reverse = config.get('left_rear_reverse', default_value=False)
+right_rear_reverse = config.get('right_rear_reverse', default_value=False)
+ultrasonic_servo_offset = int(config.get('ultrasonic_servo_offset', default_value=0))
 
 # Init motors
-left_front = Motor(PWM("P13"), Pin("D4"), is_reversed=left_front_reverse) # motor 1
-right_front = Motor(PWM("P12"), Pin("D5"), is_reversed=right_front_reverse) # motor 2
-left_rear = Motor(PWM("P8"), Pin("D11"), is_reversed=left_rear_reverse) # motor 3
-right_rear = Motor(PWM("P9"), Pin("D15"), is_reversed=right_rear_reverse) # motor 4
+left_front = Motor(PWM("P13"), Pin("D4"), is_reversed=left_front_reverse)  # motor 1
+right_front = Motor(PWM("P12"), Pin("D5"), is_reversed=right_front_reverse)  # motor 2
+left_rear = Motor(PWM("P8"), Pin("D11"), is_reversed=left_rear_reverse)  # motor 3
+right_rear = Motor(PWM("P9"), Pin("D15"), is_reversed=right_rear_reverse)  # motor 4
 
 # left_front_speed = Speed(12)
 # right_front_speed = Speed(16)
 left_rear_speed = Speed(25)
-right_rear_speed = Speed(4)  
+right_rear_speed = Speed(4)
 
 # Init Greyscale
 gs0 = ADC('A5')
@@ -43,51 +49,61 @@ us = Ultrasonic(Pin('D8'), Pin('D9'))
 
 servo = Servo(PWM("P0"), offset=ultrasonic_servo_offset)
 
+
 def start_speed_thread():
     # left_front_speed.start()
     # right_front_speed.start()
     left_rear_speed.start()
     right_rear_speed.start()
 
-##################################################################
-# Grayscale 
-def get_grayscale_list():
-    adc_value_list = []
-    adc_value_list.append(gs0.read())
-    adc_value_list.append(gs1.read())
-    adc_value_list.append(gs2.read())
-    return adc_value_list
 
-def is_on_edge(ref, gs_list):
+##################################################################
+# Grayscale
+def get_grayscale_list() -> Tuple[GrayscaleReading, GrayscaleReading, GrayscaleReading]:
+    return gs0.read(), gs1.read(), gs2.read()
+
+
+def is_on_edge(ref: GrayscaleReading, gs_list):
     ref = int(ref)
-    if gs_list[2] <= ref or gs_list[1] <= ref or gs_list[0] <= ref:  
+    if gs_list[2] <= ref or gs_list[1] <= ref or gs_list[0] <= ref:
         return True
     else:
         return False
 
-def get_line_status(ref,fl_list):#170<x<300
-    ref = int(ref)
-    if fl_list[1] <= ref:
-        return 0
-    
-    elif fl_list[0] <= ref:
-        return -1
 
-    elif fl_list[2] <= ref:
-        return 1
+def get_line_status(ref: GrayscaleReading, fl_list) -> GrayscaleResult:  # 170<x<300
+    ref = int(ref)
+    line_detected = tuple(fl_list[i] < ref for i in range(len(fl_list)))
+    if any(line_detected):
+        if not line_detected[0]:
+            return GrayscaleResult.RIGHT
+        elif not line_detected[2]:
+            return GrayscaleResult.LEFT
+        else:
+            return GrayscaleResult.FORWARD
+    else:
+        min_ind = argmin(fl_list)
+        if fl_list[min_ind] / mean(fl_list) < 0.8:
+            if min_ind == 0:
+                return GrayscaleResult.LEFT
+            elif min_ind == 2:
+                return GrayscaleResult.RIGHT
+    return GrayscaleResult.UNKNOWN
+
 
 ########################################################
 # Ultrasonic
 ANGLE_RANGE = 180
 STEP = 18
 us_step = STEP
-angle_distance = [0,0]
+angle_distance = [0, 0]
 current_angle = 0
-max_angle = ANGLE_RANGE/2
-min_angle = -ANGLE_RANGE/2
+max_angle = ANGLE_RANGE / 2
+min_angle = -ANGLE_RANGE / 2
 scan_list = []
 
 errors = []
+
 
 def run_command(cmd=""):
     import subprocess
@@ -112,6 +128,7 @@ def do(msg="", cmd=""):
         errors.append("%s error:\n  Status:%s\n  Error:%s" %
                       (msg, status, result))
 
+
 def get_distance_at(angle):
     global angle_distance
     servo.set_angle(angle)
@@ -119,6 +136,7 @@ def get_distance_at(angle):
     distance = us.get_distance()
     angle_distance = [angle, distance]
     return distance
+
 
 def get_status_at(angle, ref1=35, ref2=10):
     dist = get_distance_at(angle)
@@ -129,6 +147,7 @@ def get_status_at(angle, ref1=35, ref2=10):
     else:
         return 0
 
+
 def scan_step(ref):
     global scan_list, current_angle, us_step
     current_angle += us_step
@@ -138,7 +157,7 @@ def scan_step(ref):
     elif current_angle <= min_angle:
         current_angle = min_angle
         us_step = STEP
-    status = get_status_at(current_angle, ref1=ref)#ref1
+    status = get_status_at(current_angle, ref1=ref)  # ref1
 
     scan_list.append(status)
     if current_angle == min_angle or current_angle == max_angle:
@@ -152,6 +171,7 @@ def scan_step(ref):
     else:
         return False
 
+
 ########################################################
 # Motors
 def forward(power):
@@ -160,11 +180,13 @@ def forward(power):
     right_front.set_power(power)
     right_rear.set_power(power)
 
+
 def backward(power):
     left_front.set_power(-power)
     left_rear.set_power(-power)
     right_front.set_power(-power)
     right_rear.set_power(-power)
+
 
 def turn_left(power):
     left_front.set_power(-power)
@@ -172,17 +194,20 @@ def turn_left(power):
     right_front.set_power(power)
     right_rear.set_power(power)
 
+
 def turn_right(power):
     left_front.set_power(power)
     left_rear.set_power(power)
     right_front.set_power(-power)
     right_rear.set_power(-power)
 
+
 def stop():
     left_front.set_power(0)
     left_rear.set_power(0)
     right_front.set_power(0)
     right_rear.set_power(0)
+
 
 def set_motor_power(motor, power):
     if motor == 1:
@@ -193,6 +218,7 @@ def set_motor_power(motor, power):
         left_rear.set_power(power)
     elif motor == 4:
         right_rear.set_power(power)
+
 
 # def speed_val(*arg):
 #     if len(arg) == 0:
@@ -209,7 +235,8 @@ def set_motor_power(motor, power):
 def speed_val():
     return (left_rear_speed() + right_rear_speed()) / 2.0
 
-######################################################## 
+
+########################################################
 if __name__ == '__main__':
     start_speed_thread()
     while 1:

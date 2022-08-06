@@ -1,8 +1,7 @@
-
-
 import subprocess
 import os
 import time
+
 
 def soft_reset():
     from picar_4wd.pin import Pin
@@ -13,23 +12,27 @@ def soft_reset():
     soft_reset_pin.high()
     time.sleep(0.001)
 
-def mapping(x,min_val,max_val,aim_min,aim_max):
-    x = aim_min + abs((x - min_val) / (max_val- min_val) * (aim_max-aim_min))
+
+def mapping(x, min_val, max_val, aim_min, aim_max):
+    x = aim_min + abs((x - min_val) / (max_val - min_val) * (aim_max - aim_min))
     return x
 
-def cpu_temperature():          # cpu_temperature
+
+def cpu_temperature():  # cpu_temperature
     raw_cpu_temperature = subprocess.getoutput("cat /sys/class/thermal/thermal_zone0/temp")
-    cpu_temperature = round(float(raw_cpu_temperature)/1000,2)               # convert unit
-    #cpu_temperature = 'Cpu temperature : ' + str(cpu_temperature)
+    cpu_temperature = round(float(raw_cpu_temperature) / 1000, 2)  # convert unit
+    # cpu_temperature = 'Cpu temperature : ' + str(cpu_temperature)
     return cpu_temperature
 
-def gpu_temperature():          # gpu_temperature(
-    raw_gpu_temperature = subprocess.getoutput( '/opt/vc/bin/vcgencmd measure_temp' )
-    gpu_temperature = round(float(raw_gpu_temperature.replace( 'temp=', '' ).replace( '\'C', '' )), 2)
-    #gpu_temperature = 'Gpu temperature : ' + str(gpu_temperature)
+
+def gpu_temperature():  # gpu_temperature(
+    raw_gpu_temperature = subprocess.getoutput('/opt/vc/bin/vcgencmd measure_temp')
+    gpu_temperature = round(float(raw_gpu_temperature.replace('temp=', '').replace('\'C', '')), 2)
+    # gpu_temperature = 'Gpu temperature : ' + str(gpu_temperature)
     return gpu_temperature
 
-def cpu_usage():                # cpu_usage
+
+def cpu_usage():  # cpu_usage
     # result = str(os.popen("top -n1 | awk '/Cpu\(s\):/ {print($2)}'").readline().strip())
     result = os.popen("mpstat").read().strip()
     result = result.split('\n')[-1].split(' ')[-1]
@@ -38,14 +41,16 @@ def cpu_usage():                # cpu_usage
     # print(result)
     return result
 
-def disk_space():               # disk_space
+
+def disk_space():  # disk_space
     p = os.popen("df -h /")
     i = 0
     while 1:
-        i = i +1
-        line = p.readline()         
-        if i==2:
-            return line.split()[1:5]    
+        i = i + 1
+        line = p.readline()
+        if i == 2:
+            return line.split()[1:5]
+
 
 def ram_info():
     p = os.popen('free')
@@ -53,19 +58,21 @@ def ram_info():
     while 1:
         i = i + 1
         line = p.readline()
-        if i==2:
-            return list(map(lambda x:round(int(x) / 1000,1), line.split()[1:4]))   
+        if i == 2:
+            return list(map(lambda x: round(int(x) / 1000, 1), line.split()[1:4]))
+
 
 def pi_read():
     result = {
-        "cpu_temperature": cpu_temperature(), 
+        "cpu_temperature": cpu_temperature(),
         "gpu_temperature": gpu_temperature(),
-        "cpu_usage": cpu_usage(), 
-        "disk": disk_space(), 
-        "ram": ram_info(), 
-        "battery": power_read(), 
+        "cpu_usage": cpu_usage(),
+        "disk": disk_space(),
+        "ram": ram_info(),
+        "battery": power_read(),
     }
-    return result 
+    return result
+
 
 def power_read():
     from picar_4wd.adc import ADC
@@ -76,6 +83,7 @@ def power_read():
     power_val = power_val * 3
     power_val = round(power_val, 2)
     return power_val
+
 
 def getIP(ifaces=['wlan0', 'eth0']):
     import re
@@ -118,7 +126,7 @@ def main():
                 print("Run: `picar-4wd web-example enable/disable` to enable/disable start on boot")
                 os.system("sudo python3 /home/pi/picar-4wd/examples/web/start.py")
         elif command == "test":
-            from picar_4wd import forward,get_distance_at,get_grayscale_list,stop
+            from picar_4wd import forward, get_distance_at, get_grayscale_list, stop
             if len(sys.argv) >= 3:
                 opt = sys.argv[2]
                 if opt == "motor":
@@ -142,6 +150,7 @@ def main():
         usage()
     destroy()
 
+
 # def main():
 #     try:
 #         _main()
@@ -149,7 +158,8 @@ def main():
 
 def destroy():
     quit()
- 
+
+
 def usage(cmd=None):
     general = '''
 Usage:  picar-4wd [Command] [option]
@@ -183,4 +193,3 @@ Options:
     elif cmd == "test":
         print(test)
     destroy()
-        
