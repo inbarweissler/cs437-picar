@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from typing import Tuple
 
+# import numpy as np
 from numpy import argmin, mean
 
 from picar_4wd.pwm import PWM
@@ -9,12 +10,11 @@ from picar_4wd.adc import ADC
 from picar_4wd.pin import Pin
 from picar_4wd.motor import Motor
 from picar_4wd.servo import Servo
-from picar_4wd.types import GrayscaleReading, GrayscaleResult
+from picar_4wd.types import GrayscaleReading, GrayscaleResult, DistanceStatus
 from picar_4wd.ultrasonic import Ultrasonic
 from picar_4wd.speed import Speed
 from picar_4wd.filedb import FileDB
 from picar_4wd.utils import *
-import time
 
 
 # Config File:
@@ -92,16 +92,6 @@ def get_line_status(ref: GrayscaleReading, fl_list) -> GrayscaleResult:  # 170<x
 
 
 ########################################################
-# Ultrasonic
-ANGLE_RANGE = 180
-STEP = 18
-us_step = STEP
-angle_distance = [0, 0]
-current_angle = 0
-max_angle = ANGLE_RANGE / 2
-min_angle = -ANGLE_RANGE / 2
-scan_list = []
-
 errors = []
 
 
@@ -129,47 +119,18 @@ def do(msg="", cmd=""):
                       (msg, status, result))
 
 
-def get_distance_at(angle):
-    global angle_distance
-    servo.set_angle(angle)
-    time.sleep(0.04)
-    distance = us.get_distance()
-    angle_distance = [angle, distance]
-    return distance
-
-
-def get_status_at(angle, ref1=35, ref2=10):
-    dist = get_distance_at(angle)
-    if dist > ref1 or dist == -2:
-        return 2
-    elif dist > ref2:
-        return 1
-    else:
-        return 0
-
-
-def scan_step(ref):
-    global scan_list, current_angle, us_step
-    current_angle += us_step
-    if current_angle >= max_angle:
-        current_angle = max_angle
-        us_step = -STEP
-    elif current_angle <= min_angle:
-        current_angle = min_angle
-        us_step = STEP
-    status = get_status_at(current_angle, ref1=ref)  # ref1
-
-    scan_list.append(status)
-    if current_angle == min_angle or current_angle == max_angle:
-        if us_step < 0:
-            # print("reverse")
-            scan_list.reverse()
-        # print(scan_list)
-        tmp = scan_list.copy()
-        scan_list = []
-        return tmp
-    else:
-        return False
+def get_us_status(ref1=35, ref2=10, num_scans=5) -> DistanceStatus:
+    dist_list = [us.get_distance() for _ in range(num_scans)]
+    if all(dist is None for dist in dist_list):
+        return DistanceStatus.ABOVE_MAX
+    dist = mean([dist for dist in dist_list if dist is not None])
+    if dist:
+        if dist > ref1:
+            return DistanceStatus.ABOVE_MAX
+        elif dist > ref2:
+            return DistanceStatus.ABOVE_MIN
+        else:
+            return DistanceStatus.BELOW_MIN
 
 
 ########################################################

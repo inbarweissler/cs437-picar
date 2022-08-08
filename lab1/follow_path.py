@@ -3,31 +3,39 @@ sys.path.append('/home/pi/cs437-picar')
 
 # import time
 from typing import Dict, Callable
-from picar_4wd.types import MotorPower, GrayscaleResult, GrayscaleReading
+from picar_4wd.types import MotorPower, GrayscaleResult, GrayscaleReading, DistanceStatus
 import picar_4wd as fc
 import sys
 import signal
 
 car_speed: MotorPower = 2
 greyscale_ref: GrayscaleReading = 150
-DIST_ABOVE_REF = 2
-min_dist = 10  # [cm]
-sleep_duration = 0.1  # [s]
 
+max_sleep_duration = 2  # [s]
+fw_sleep_duration = 0.5
+bw_sleep_duration = 0.25
+# debug_flag = False
+max_dist = 10  # [cm]
+scan_res = 15  # [deg]
+wide_field_of_view = 90  # [deg]
+narrow_field_of_view = 45  # [deg]
 
-def detect_obstacles():
-    scan_result = fc.scan_step(min_dist)
-    if not scan_result:
-        return False
-    curr_scan = scan_result[3:7]
-    if curr_scan != [DIST_ABOVE_REF, DIST_ABOVE_REF, DIST_ABOVE_REF, DIST_ABOVE_REF]:
-        fc.time.sleep(sleep_duration)
-        fc.backward(car_speed)
-        fc.time.sleep(sleep_duration)
-        fc.turn_left(car_speed)
-        return True
+def detect_obstacles(full_scan=False) -> bool:
+    if full_scan:
+        fc.servo.set_angle_and_wait(0)
+        n_scans = wide_field_of_view // scan_res
+        scans = []
+        for _ in range(n_scans):
+            fc.servo.scan_step(step_res=scan_res, angle_range=wide_field_of_view)
+            scans.append(fc.get_us_status(ref1=max_dist) != DistanceStatus.ABOVE_MAX)
+        return any(scans)
     else:
-        return False
+        fc.servo.scan_step(step_res=scan_res, angle_range=narrow_field_of_view)
+        status = fc.get_us_status(ref1=max_dist)
+        if status == DistanceStatus.ABOVE_MAX:
+            return False
+        else:
+            return True
 
 
 action_dict: Dict[GrayscaleResult, Callable[[MotorPower], None]] = {
@@ -37,29 +45,14 @@ action_dict: Dict[GrayscaleResult, Callable[[MotorPower], None]] = {
 }
 
 
-def track_line(is_detour: bool) -> None:
+def track_line() -> None:
     adc_value_list = fc.get_grayscale_list()
     line_status = fc.get_line_status(greyscale_ref, adc_value_list)
 
-    '''
-    call detect_obstacles with the suggested direction from line_status 
-    then in return it either continue with this direction or move to the left
-    if move to the left then need again to verify it crossed the obstacle
-    and then need to move to the right back to path
-    '''
-    # if is_detour:
-    #     fc.turn_right(car_speed)
-    #     # return False
-    # else:
     if line_status is not GrayscaleResult.UNKNOWN:
         action_dict[line_status](car_speed)
-        # time.sleep(0.05)
-        # fc.stop()
     else:
         fc.stop()
-    # if detect_obstacles():
-    #     return True
-    # return last_state
 
 
 def signal_handler(signal, frame):
@@ -68,17 +61,43 @@ def signal_handler(signal, frame):
     sys.exit(0)
 
 
+def detour_obstacle():
+    print("\nobstacle detected")
+    fc.stop()
+    fc.backward(car_speed)
+    fc.time.sleep(bw_sleep_duration)
+    fc.stop()
+    fc.turn_left(car_speed)
+    fc.time.sleep(fw_sleep_duration)
+    fc.stop()
+    fc.forward(car_speed)
+    fc.time.sleep(fw_sleep_duration)
+    fc.stop()
+    fc.turn_right(car_speed)
+    fc.turn_right(car_speed)
+    fc.time.sleep(fw_sleep_duration)
+    fc.stop()
+    fc.forward(car_speed)
+    fc.time.sleep(fw_sleep_duration)
+    fc.stop()
+
+
 signal.signal(signal.SIGINT, signal_handler)
 
 if __name__ == '__main__':
-
     '''
     This is main script for cs437 lab1 part1
     Driving along a routh which determined by path marked on the floor
-    Note that track_line is based on picar-4wd Track_line implementation
     While driving avoiding obstacles, 
     and if encountered one go left and then turn right and return to path
     '''
-
+    full_scan = True
     while True:
-        track_line(False)
+        track_line()
+        fc.time.sleep(fw_sleep_duration)
+        fc.stop()
+        # if detect_obstacles(full_scan):
+        #     full_scan = True
+        #     detour_obstacle()
+        # else:
+        #     full_scan = False

@@ -1,7 +1,10 @@
 import time
+from typing import Optional
+
 from picar_4wd.servo import Servo
 from picar_4wd.pwm import PWM
 from picar_4wd.pin import Pin
+
 
 class Ultrasonic():
     ANGLE_RANGE = 180
@@ -13,13 +16,13 @@ class Ultrasonic():
         self.echo = echo
         # Init Servo
         self.servo = Servo(PWM("P0"), offset=10)
-        self.angle_distance = [0,0]
+        self.angle_distance = [0, 0]
         self.current_angle = 0
-        self.max_angle = self.ANGLE_RANGE/2
-        self.min_angle = -self.ANGLE_RANGE/2
+        self.max_angle = self.ANGLE_RANGE / 2
+        self.min_angle = -self.ANGLE_RANGE / 2
         self.scan_list = []
 
-    def get_distance(self):
+    def get_distance(self) -> Optional[float]:
         self.trig.low()
         time.sleep(0.01)
         self.trig.high()
@@ -28,17 +31,17 @@ class Ultrasonic():
         pulse_end = 0
         pulse_start = 0
         timeout_start = time.time()
-        while self.echo.value()==0:
+        while self.echo.value() == 0:
             pulse_start = time.time()
             if pulse_start - timeout_start > self.timeout:
-                return -1
-        while self.echo.value()==1:
+                return None
+        while self.echo.value() == 1:
             pulse_end = time.time()
             if pulse_end - timeout_start > self.timeout:
-                return -2
+                return None
         during = pulse_end - pulse_start
         cm = round(during * 340 / 2 * 100, 2)
-        #print(cm)
+        # print(cm)
         return cm
 
     # def get_distance_at(self, angle):
