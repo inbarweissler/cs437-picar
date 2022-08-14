@@ -1,8 +1,6 @@
 import sys
-
 sys.path.append('/home/pi/cs437-picar')
-
-# import time
+import time
 from typing import Dict, Callable
 from picar_4wd.types import MotorPower, GrayscaleResult, GrayscaleReading, DirectionType, DistanceStatus
 import picar_4wd as fc
@@ -35,7 +33,7 @@ def random_turn() -> None:
     action_dict[next_direction](car_speed)
     # choose random time duration (define the angle)
     sleep_duration = random.random() * max_sleep_duration
-    fc.time.sleep(sleep_duration)
+    time.sleep(sleep_duration)
     fc.stop()
 
 
@@ -76,13 +74,13 @@ if __name__ == '__main__':
         if not detect_obstacles(full_scan):
             full_scan = False
             fc.forward(car_speed)
-            fc.time.sleep(fw_sleep_duration)
+            time.sleep(fw_sleep_duration)
             fc.stop()
         else:
             fc.stop()
             # if not full_scan:
             #     fc.backward(car_speed)
-            #     fc.time.sleep(bw_sleep_duration)
+            #     time.sleep(bw_sleep_duration)
             #     fc.stop()
             random_turn()
             full_scan = True

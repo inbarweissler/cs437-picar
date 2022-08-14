@@ -81,13 +81,13 @@ def get_line_status(ref: GrayscaleReading, fl_list) -> GrayscaleResult:  # 170<x
             return GrayscaleResult.LEFT
         else:
             return GrayscaleResult.FORWARD
-    else:
-        min_ind = argmin(fl_list)
-        if fl_list[min_ind] / mean(fl_list) < 0.8:
-            if min_ind == 0:
-                return GrayscaleResult.LEFT
-            elif min_ind == 2:
-                return GrayscaleResult.RIGHT
+    # else:
+    #     min_ind = argmin(fl_list)
+    #     if fl_list[min_ind] / mean(fl_list) < 0.8:
+    #         if min_ind == 0:
+    #             return GrayscaleResult.LEFT
+    #         elif min_ind == 2:
+    #             return GrayscaleResult.RIGHT
     return GrayscaleResult.UNKNOWN
 
 

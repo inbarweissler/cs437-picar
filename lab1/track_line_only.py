@@ -1,9 +1,6 @@
 import sys
-import time
-
 sys.path.append('/home/pi/cs437-picar')
-
-# import time
+import time
 from typing import Dict, Callable
 from picar_4wd.types import MotorPower, GrayscaleResult, GrayscaleReading, DistanceStatus
 import picar_4wd as fc
