@@ -6,7 +6,7 @@ from picar_4wd.pwm import PWM
 from picar_4wd.pin import Pin
 
 
-class Ultrasonic():
+class Ultrasonic:
     ANGLE_RANGE = 180
     STEP = 18
 
@@ -23,18 +23,22 @@ class Ultrasonic():
         self.scan_list = []
 
     def get_distance(self) -> Optional[float]:
+        pulse_end = 0.0
+        pulse_start = 0.0
+
         self.trig.low()
         time.sleep(0.01)
         self.trig.high()
-        time.sleep(0.000015)
+        time.sleep(0.00000015)
         self.trig.low()
-        pulse_end = 0
-        pulse_start = 0
+
+        # begin pulse
         timeout_start = time.time()
         while self.echo.value() == 0:
             pulse_start = time.time()
             if pulse_start - timeout_start > self.timeout:
                 return None
+        # wait for echo
         while self.echo.value() == 1:
             pulse_end = time.time()
             if pulse_end - timeout_start > self.timeout:
