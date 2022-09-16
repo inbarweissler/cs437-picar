@@ -20,27 +20,6 @@ class FPS:
             return 0.0
 
 
-# if __name__ == "__main__":
-#     sign_detector = Detector()
-#     fps = FPS()
-#     im_res = (320*2, 240*2)
-#     with PiCamera() as camera:
-#         camera.resolution = im_res
-#         camera.framerate = 24
-#         time.sleep(2)
-#         frame = np.empty((im_res[1], im_res[0], 3), dtype=np.uint8)
-#         camera.capture(frame, 'bgr')
-#         print("Camera OK")
-#         print(f"Image resolution: {frame.shape[:2]} pixels")
-#
-#         for _ in range(100):
-#             camera.capture(frame, 'bgr')
-#             bounding_boxes = sign_detector.detected(frame)
-#             print(fps())
-#             for road_sign, bb in bounding_boxes.items():
-#                 if len(bb) > 0:
-#                     print(road_sign.name)
-
 im_res = (320, 240)
 save_movie = True
 sign_detector = Detector()
@@ -55,7 +34,7 @@ out = cv2.VideoWriter(f'objdet_{datetime.now().strftime("%H:%M:%S")}.avi', cv2.V
 if grabbed:
     print("Camera OK")
     print(f"Image resolution: {frame.shape[:2]} pixels")
-for _ in range(20):
+for _ in range(350):
     (grabbed, frame) = stream.read()
     if not grabbed:
         break

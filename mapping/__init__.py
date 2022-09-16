@@ -103,6 +103,7 @@ class Mapper:
     def update_grid(self,
                     car_position: MapCoordinate,
                     car_heading: AngleDeg,
+                    with_clearing:bool=True
                     ):
         self._car_position = car_position
         self._car_heading = car_heading
@@ -129,7 +130,10 @@ class Mapper:
             if grid_pos:
                 self._current_map[grid_pos] += 1
         obstacles = cv2.dilate(self._current_map, kernel=np.ones((2, 2), np.uint8), iterations=1)
-        self._current_map = 50 * cv2.blur(obstacles, (5, 5)) + 100 * obstacles  # we use blur for obstacles clearing
+        self._current_map = 100 * obstacles  # we use blur for obstacles clearing
+        if with_clearing:
+            self._current_map += 50 * cv2.blur(obstacles, (5, 5))  # we use blur for obstacles clearing
+
         self._current_map += 1
         if len(self._map_history) > 0:
             self._current_map += MAPPING_MEMORY_FACTOR * self._map_history[-1]
