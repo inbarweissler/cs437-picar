@@ -5,7 +5,6 @@ import time
 import datetime
 
 import cv2
-import numpy as np
 
 import picar_4wd as fc
 from mapping import Mapper, MapCoordinate, AngleDeg

@@ -1,10 +1,10 @@
 import sys
 sys.path.append('/home/pi/cs437-picar')
-
-from mapping import Mapper, MapCoordinate, MAX_DISTANCE_STD_TH
+import mapping
+from mapping import Mapper, MapCoordinate
 
 if __name__ == '__main__':
-    MAX_DISTANCE_STD_TH = 0.5
+    mapping.MAX_DISTANCE_STD_TH = 0.5
     mapper = Mapper(scan_res=5, num_scans=50)
     car_position = MapCoordinate(0, 0)
     car_heading = 0

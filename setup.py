@@ -29,6 +29,7 @@ def readchar():
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
     return ch
 
+
 def readkey(getchar_fn=None):
     getchar = getchar_fn or readchar
     c1 = getchar()
@@ -39,6 +40,7 @@ def readkey(getchar_fn=None):
         return c1
     c3 = getchar()
     return chr(0x10 + ord(c3) - 65)
+
 
 def run_command(cmd=""):
     import subprocess
@@ -62,6 +64,7 @@ def do(msg="", cmd=""):
         print('Error')
         errors.append("%s error:\n  Status:%s\n  Error:%s" %
                       (msg, status, result))
+
 
 class Modules(object):
     ''' 
@@ -104,6 +107,7 @@ class Modules(object):
             return 0, config
         except Exception as e:
             return -1, e
+
 
 class Config(object):
     ''' 
@@ -151,39 +155,40 @@ class Config(object):
         except Exception as e:
             return -1, e
 
+
 def install():
     print("Install dependency")
     do(msg="update apt-get",
-        cmd='run_command("sudo apt-get update")')
+       cmd='run_command("sudo apt-get update")')
     do(msg="install pip",
-        cmd='run_command("sudo apt-get install python3-pip -y")')
+       cmd='run_command("sudo apt-get install python3-pip -y")')
     # do(msg="install git",
     #     cmd='run_command("sudo apt-get install git-core -y")')
     do(msg="install sysstat",
-        cmd='run_command("sudo apt-get install sysstat -y")')
+       cmd='run_command("sudo apt-get install sysstat -y")')
     do(msg="install i2c-tools",
-        cmd='run_command("sudo apt-get install i2c-tools -y")')
-
+       cmd='run_command("sudo apt-get install i2c-tools -y")')
 
     print("Setup interfaces")
     do(msg="turn on I2C",
-        cmd='Config().set("dtparam=i2c_arm", "on")') 
+       cmd='Config().set("dtparam=i2c_arm", "on")')
     do(msg="Add I2C module",
-        cmd='Modules().set("i2c-dev")') 
+       cmd='Modules().set("i2c-dev")')
 
     if ".picar-4wd" not in listdir("/home/pi"):
         do(msg="create .picar-4wd directory",
-            cmd='run_command("sudo mkdir /home/pi/.picar-4wd/")') 
+           cmd='run_command("sudo mkdir /home/pi/.picar-4wd/")')
     do(msg="copy picar-4wd-config",
-        cmd='run_command("sudo cp ./data/config /home/pi/.picar-4wd/config")')
+       cmd='run_command("sudo cp ./data/config /home/pi/.picar-4wd/config")')
     do(msg="change directory owner",
-        cmd='run_command("sudo chown -R pi:pi /home/pi/.picar-4wd/")')
+       cmd='run_command("sudo chown -R pi:pi /home/pi/.picar-4wd/")')
 
-    print("Setup picar-4wd web-example service") 
+    print("Setup picar-4wd web-example service")
     do(msg="copy picar-4wd web-example file",
-        cmd='run_command("sudo cp ./bin/picar-4wd-web-example /etc/init.d/picar-4wd-web-example")')
+       cmd='run_command("sudo cp ./bin/picar-4wd-web-example /etc/init.d/picar-4wd-web-example")')
     do(msg="add excutable mode for picar-4wd-web-example",
-        cmd='run_command("sudo chmod +x /etc/init.d/picar-4wd-web-example")')
+       cmd='run_command("sudo chmod +x /etc/init.d/picar-4wd-web-example")')
+
 
 install()
 
@@ -241,13 +246,13 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=['RPi.GPIO', 'smbus', 'websockets'],
- 
+
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
         'console_scripts': [
-            'picar-4wd=picar_4wd.utils:main', 
+            'picar-4wd=picar_4wd.utils:main',
         ],
     },
 )
@@ -259,7 +264,7 @@ if len(errors) == 0:
     print(input_val)
     if input_val == 'y':
         do(msg="System reboot now",
-        cmd='run_command("sudo reboot")')
+           cmd='run_command("sudo reboot")')
     elif input_val == 'n':
         print("reboot cancel")
 else:
