@@ -87,24 +87,22 @@ def detect_obstacles(full_scan=False) -> bool:
 
 def detour_obstacle() -> None:
     # calc the needed time delay for left turn
-    obstacle_dist = fc.us.get_distance()/100
-    margin_duration = 0.35  # TODO: this duration should be proportional to obstacle length
-    left_turn_duration = obstacle_dist / car_speed + margin_duration
+    # obstacle_dist = fc.us.get_distance()/100
+    turn_duration = 0.5
     fc.turn_left(car_speed)
-    fc.time.sleep(left_turn_duration)
+    fc.time.sleep(turn_duration)
     fc.stop()
     fc.forward(car_speed)
     fc.time.sleep(1)
     fc.stop()
     fc.turn_right(car_speed)
-    fc.time.sleep(left_turn_duration)
+    fc.time.sleep(turn_duration)
     fc.stop()
     fc.forward(car_speed)
-    fc.time.sleep(0.5)  # TODO: this duration should be proportional to obstacle length
+    fc.time.sleep(0.5)
     fc.stop()
-    # TODO: check if area is clear to the right before turning right? make assumption on obstacle length?
     fc.turn_right(car_speed)
-    fc.time.sleep(left_turn_duration)
+    fc.time.sleep(turn_duration)
     fc.stop()
 
 
