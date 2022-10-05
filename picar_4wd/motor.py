@@ -1,3 +1,4 @@
+import math
 import threading
 
 class Motor():
@@ -17,12 +18,12 @@ class Motor():
     def set_power(self, power):
         if power >= 0:
             direction = 0
-        elif power < 0:
+        else:
             direction = 1
-        power = abs(power)
-        if power != 0:
-            power = int(power /2 ) + 50
-        power = power
+        power = int(math.sqrt(abs(power)*900))
+        # if power != 0:
+        #     power = int(power)
+        # power = power
 
         direction = direction if not self._is_reversed else not direction  
         self.dir_pin.value(direction)

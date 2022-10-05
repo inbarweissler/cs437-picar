@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import subprocess
 import os
 import time
+from typing import Dict, List
 
 
 def soft_reset():
@@ -18,11 +21,11 @@ def mapping(x, min_val, max_val, aim_min, aim_max):
     return x
 
 
-def cpu_temperature():  # cpu_temperature
+def cpu_temperature() -> float:  # cpu_temperature
     raw_cpu_temperature = subprocess.getoutput("cat /sys/class/thermal/thermal_zone0/temp")
-    cpu_temperature = round(float(raw_cpu_temperature) / 1000, 2)  # convert unit
+    cpu_temp = round(float(raw_cpu_temperature) / 1000, 2)  # convert unit
     # cpu_temperature = 'Cpu temperature : ' + str(cpu_temperature)
-    return cpu_temperature
+    return cpu_temp
 
 
 def gpu_temperature():  # gpu_temperature(
@@ -37,7 +40,6 @@ def cpu_usage():  # cpu_usage
     result = os.popen("mpstat").read().strip()
     result = result.split('\n')[-1].split(' ')[-1]
     result = round(100 - float(result), 2)
-    result = str(result)
     # print(result)
     return result
 
@@ -62,7 +64,7 @@ def ram_info():
             return list(map(lambda x: round(int(x) / 1000, 1), line.split()[1:4]))
 
 
-def pi_read():
+def pi_read() -> Dict[str, float | List[float] | str]:
     result = {
         "cpu_temperature": cpu_temperature(),
         "gpu_temperature": gpu_temperature(),
